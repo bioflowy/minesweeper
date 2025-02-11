@@ -1,56 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { Cell } from '../types/types';
-import { GameLogic } from '../logic/gameLogic';
+import React, { useState } from 'react';
+import {  MineField, revealCell, toggleFlag, revealAll,type Board, createBoard, getCell } from '../logic/gameLogic';
 
 interface BoardProps {
-  width: number;
-  height: number;
-  mines: number;
+    mineField: MineField
 }
 
-const Board: React.FC<BoardProps> = ({ width, height, mines }) => {
-  const [game, setGame] = useState<GameLogic | null>(null);
-  const [board, setBoard] = useState<Cell[][]>([]);
+const Board: React.FC<BoardProps> = ({mineField}:BoardProps) => {
+  const [board, setBoard] = useState<Board>(createBoard(mineField));
 
-  useEffect(() => {
-    const newGame = new GameLogic(width, height, mines);
-    setGame(newGame);
-    setBoard(newGame.getBoard());
-  }, [width, height, mines]);
-
-  const handleCellClick = (x: number, y: number) => {
-    if (!game) return;
+  const handleCellClick = (row: number, col: number) => {
+    if (!board) return;
     
-    if (game.isMine(x, y)) {
-      game.revealAll();
+    if (mineField.state[row][col] === '💣') {
+      setBoard(revealAll(board));
     } else {
-      game.revealCell(x, y);
+      setBoard(revealCell(board,row, col));
     }
-    setBoard([...game.getBoard()]);
   };
 
-  const handleRightClick = (e: React.MouseEvent, x: number, y: number) => {
+  const handleRightClick = (e: React.MouseEvent, row: number, col: number) => {
     e.preventDefault();
-    if (!game) return;
-
-    game.toggleFlag(x, y);
-    setBoard([...game.getBoard()]);
+    if (!board) return;
+    setBoard(toggleFlag(board,row, col));
   };
 
   return (
     <div className="board">
-      {board.map((row, y) => (
-        <div key={y} className="row">
-          {row.map((cell, x) => (
-            <div
-              key={`${x}-${y}`}
-              className={`cell ${cell.state}`}
-              onClick={() => handleCellClick(x, y)}
-              onContextMenu={(e) => handleRightClick(e, x, y)}
+      {Array.from({ length: mineField.height }, (_, i) => i).map((row) => (
+        <div key={row} className="row">
+          {Array.from({ length: mineField.width }, (_, i) => i).map((col) => {
+            const cell = getCell(board,row, col);
+            return <div
+              key={`${col}-${row}`}
+              className={`cell ${cell}`}
+              onClick={() => handleCellClick(row, col)}
+              onContextMenu={(e) => handleRightClick(e, row, col)}
             >
-              {cell.state === 'revealed' ? cell.value : cell.state === 'flagged' ? '🚩' : ''}
+              {cell}
             </div>
-          ))}
+            }
+          )}
         </div>
       ))}
     </div>

@@ -1,82 +1,84 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { GameLogic } from './gameLogic';
+import { describe , test, expect, beforeEach } from 'vitest';
+import { createBoard, createMineField, MineField, revealAll, revealCell, toggleFlag } from './gameLogic';
 
-describe('GameLogic', () => {
-  let game: GameLogic;
+describe('MineField', () => {
+  let mineField: MineField;
 
   beforeEach(() => {
     // テストごとに新しいゲームインスタンスを作成
-    game = new GameLogic(5, 5, 3);
+    mineField = createMineField(3, 5, 5 );
   });
 
-  test('ボードが正しいサイズで初期化される', () => {
-    const board = game.getBoard();
-    expect(board.length).toBe(5); // 高さ
-    expect(board[0].length).toBe(5); // 幅
+  test('地雷原が正しいサイズで初期化される', () => {
+    expect(mineField.height).toBe(5); // 高さ
+    expect(mineField.width).toBe(5); // 幅
   });
 
   test('指定された数の地雷が配置される', () => {
-    const board = game.getBoard();
-    let mineCount = 0;
     
-    board.forEach(row => {
+    let mineCount = 0;
+    mineField.state.forEach(row => {
       row.forEach(cell => {
-        if (cell.value === '💣') mineCount++;
+        if (cell === '💣') mineCount++;
       });
     });
 
     expect(mineCount).toBe(3);
   });
+}
+)
+describe('Board', () => {
+    let mineField: MineField;
+    beforeEach(() => {
+      // テストごとに新しいゲームインスタンスを作成
+      mineField = {
+        width: 3,
+        height: 3,
+        state: [
+            ['💣',  1, 0 ],
+            [  1  , 1, 0 ],
+            [  0,   0, 0 ]
+        ]
+      };
+    });
 
-  test('セルを開くと状態が revealed になる', () => {
-    game.revealCell(0, 0);
-    const board = game.getBoard();
-    expect(board[0][0].state).toBe('revealed');
+    test('セルを開くと状態が revealed になる', () => {
+        const board = createBoard(mineField);
+        const newBoard = revealCell(board,1, 1);
+        expect(newBoard.state[1][1]).toBe('revealed');
   });
 
   test('フラグのトグルが正しく動作する', () => {
-    game.toggleFlag(0, 0);
-    let board = game.getBoard();
-    expect(board[0][0].state).toBe('flagged');
+    let board = createBoard(mineField);
+    board = toggleFlag(board,0, 0);
+    expect(board.state[0][0]).toBe('flagged');
 
-    game.toggleFlag(0, 0);
-    board = game.getBoard();
-    expect(board[0][0].state).toBe('hidden');
+    board = toggleFlag(board,0, 0);
+    expect(board.state[0][0]).toBe('hidden');
   });
 
   test('0のセルを開くと周囲のセルも開かれる', () => {
     // 0のセルを持つボードを作成するためのモック
-    const mockGame = new GameLogic(3, 3, 1);
-    const board = mockGame.getBoard();
-    
-    // 0のセルがある場所を見つけて開く
-    for (let y = 0; y < 3; y++) {
-      for (let x = 0; x < 3; x++) {
-        if (board[y][x].value === 0) {
-          mockGame.revealCell(x, y);
-          // 周囲のセルが開かれていることを確認
-          const updatedBoard = mockGame.getBoard();
-          let revealedCount = 0;
-          updatedBoard.forEach(row => {
-            row.forEach(cell => {
-              if (cell.state === 'revealed') revealedCount++;
-            });
-          });
-          expect(revealedCount).toBeGreaterThan(1);
-          return;
-        }
-      }
+    const board = createBoard(mineField);
+    const newBoard = revealCell(board,0, 2);
+    let revealedCount = 0;
+    newBoard.state.forEach(row => {
+      row.forEach(cell => {
+        if (cell === 'revealed') revealedCount++;
+      });
+    });
+    expect(revealedCount).toEqual(8);
     }
-  });
+  );
 
   test('全てのセルを開く', () => {
-    game.revealAll();
-    const board = game.getBoard();
+    const board = createBoard(mineField);
+    const newBoard = revealAll(board);
     let allRevealed = true;
     
-    board.forEach(row => {
+    newBoard.state.forEach(row => {
       row.forEach(cell => {
-        if (cell.state !== 'revealed') allRevealed = false;
+        if (cell !== 'revealed') allRevealed = false;
       });
     });
 
